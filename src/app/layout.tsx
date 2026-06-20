@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { siteConfig } from "@/config/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CabEase | Transportation Management",
-  description: "Enterprise Fleet and Transportation Management Platform",
+  title: `${siteConfig.name} | Transportation Management`,
+  description: siteConfig.description,
 };
 
 export default function RootLayout({

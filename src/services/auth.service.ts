@@ -15,13 +15,26 @@ export interface LoginResponse {
     email: string;
     role: string;
     name: string;
+    companyId?: string;
   };
 }
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post('/auth/login', data);
-    return response.data.data;
+    const d = response.data.data;
+    
+    return {
+      accessToken: d.accessToken,
+      refreshToken: d.refreshToken,
+      user: {
+        id: d.userId,
+        email: d.email,
+        name: d.name,
+        role: d.role,
+        companyId: d.companyId
+      }
+    };
   },
 
   logout: async (): Promise<void> => {

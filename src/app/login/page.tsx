@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { CarFront, Loader2 } from "lucide-react";
+import { siteConfig } from "@/config/site";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -66,9 +67,9 @@ export default function LoginPage() {
           <div className="bg-primary/10 p-3 rounded-full mb-4">
             <CarFront className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">CabEase</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{siteConfig.name}</h1>
           <p className="text-muted-foreground mt-2 text-center">
-            Enterprise Fleet Management Platform
+            {siteConfig.description}
           </p>
         </div>
 
@@ -87,7 +88,7 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="admin@cabease.com" {...field} />
+                        <Input placeholder={siteConfig.company.adminEmail} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

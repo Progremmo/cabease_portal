@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { siteConfig } from "@/config/site";
 import {
   LayoutDashboard,
   Users,
@@ -19,16 +20,11 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Users", href: "/users", icon: Users },
   { name: "Drivers", href: "/drivers", icon: Car },
   { name: "Candidates", href: "/candidates", icon: UserCheck },
-  { name: "Vehicles", href: "/vehicles", icon: Truck },
   { name: "Trips", href: "/trips", icon: MapPin },
-  { name: "Assignments", href: "/assignments", icon: ClipboardList },
   { name: "Excel Uploads", href: "/uploads", icon: Upload },
   { name: "Reports", href: "/reports", icon: BarChart },
-  { name: "Notifications", href: "/notifications", icon: Bell },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -38,7 +34,7 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-zinc-50 dark:bg-zinc-950/50">
       <div className="flex h-16 items-center border-b px-6">
         <Car className="h-6 w-6 text-primary mr-2" />
-        <span className="text-lg font-bold">CabEase</span>
+        <span className="text-lg font-bold">{siteConfig.name}</span>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {navigation.map((item) => {

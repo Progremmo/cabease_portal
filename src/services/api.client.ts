@@ -14,13 +14,23 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Frontend API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || "");
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Frontend API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
@@ -58,6 +68,11 @@ apiClient.interceptors.response.use(
         }
       }
     }
+    
+    if (process.env.NODE_ENV === "development") {
+      console.error(`[Frontend API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error.response?.data || error.message);
+    }
+    
     return Promise.reject(error);
   }
 );
