@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 export default function UploadsPage() {
   const { user } = useAuthStore();
+  const [uploadType, setUploadType] = useState<"CANDIDATE" | "DRIVER">("CANDIDATE");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<UploadResponseDto | null>(null);
@@ -28,12 +29,15 @@ export default function UploadsPage() {
     
     setIsUploading(true);
     try {
-      const response = await uploadService.uploadCandidates(file, user.companyId, user.id);
+      const response = uploadType === "CANDIDATE" 
+        ? await uploadService.uploadCandidates(file, user.companyId, user.id)
+        : await uploadService.uploadDrivers(file, user.companyId, user.id);
+        
       setResult(response);
       if (response.failedRows > 0) {
         toast.warning(`Upload completed with ${response.failedRows} errors.`);
       } else {
-        toast.success("All candidates uploaded successfully!");
+        toast.success(`All ${uploadType.toLowerCase()}s uploaded successfully!`);
       }
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "File upload failed.");
@@ -43,13 +47,24 @@ export default function UploadsPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const ws = XLSX.utils.aoa_to_sheet([
-      ["Name", "Email", "Mobile", "Pickup Address", "Pickup Lat", "Pickup Lng", "Drop Address", "Drop Lat", "Drop Lng", "Shift Time"],
-      ["John Doe", "john@example.com", "1234567890", "123 Start St", "18.5204", "73.8567", "456 End Ave", "18.5590", "73.7868", "09:00"]
-    ]);
+    let ws;
+    let fileName = "";
+    if (uploadType === "CANDIDATE") {
+      ws = XLSX.utils.aoa_to_sheet([
+        ["Name", "Email", "Mobile", "Pickup Address", "Pickup Lat", "Pickup Lng", "Drop Address", "Drop Lat", "Drop Lng", "Shift Time"],
+        ["John Doe", "john@example.com", "1234567890", "123 Start St", "18.5204", "73.8567", "456 End Ave", "18.5590", "73.7868", "09:00"]
+      ]);
+      fileName = "Candidate_Upload_Template.xlsx";
+    } else {
+      ws = XLSX.utils.aoa_to_sheet([
+        ["Name", "Email", "Mobile", "License Number", "License Expiry"],
+        ["Jane Smith", "jane@example.com", "0987654321", "DL-1234567", "2030-12-31"]
+      ]);
+      fileName = "Driver_Upload_Template.xlsx";
+    }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "Candidate_Upload_Template.xlsx");
+    XLSX.writeFile(wb, fileName);
   };
 
   return (
@@ -58,21 +73,44 @@ export default function UploadsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bulk Uploads</h1>
           <p className="text-muted-foreground mt-1">
-            Upload Excel (.xlsx) files to mass import Candidates into your organization.
+            Upload Excel (.xlsx) files to mass import Candidates or Drivers into your organization.
           </p>
         </div>
-        <Button variant="outline" onClick={handleDownloadTemplate} className="shrink-0">
-          <Download className="mr-2 h-4 w-4" />
-          Download Template
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex bg-muted p-1 rounded-lg">
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                uploadType === "CANDIDATE" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => { setUploadType("CANDIDATE"); setResult(null); setFile(null); }}
+            >
+              Candidates
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                uploadType === "DRIVER" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => { setUploadType("DRIVER"); setResult(null); setFile(null); }}
+            >
+              Drivers
+            </button>
+          </div>
+          <Button variant="outline" onClick={handleDownloadTemplate} className="shrink-0 h-10">
+            <Download className="mr-2 h-4 w-4" />
+            Download {uploadType === "CANDIDATE" ? "Candidate" : "Driver"} Template
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Candidate Import</CardTitle>
+            <CardTitle>{uploadType === "CANDIDATE" ? "Candidate Import" : "Driver Import"}</CardTitle>
             <CardDescription>
-              Columns required: Name, Email, Mobile, Pickup Address, Pickup Lat, Pickup Lng, Drop Address, Drop Lat, Drop Lng, Shift Time.
+              {uploadType === "CANDIDATE" 
+                ? "Columns required: Name, Email, Mobile, Pickup Address, Pickup Lat, Pickup Lng, Drop Address, Drop Lat, Drop Lng, Shift Time."
+                : "Columns required: Name, Email, Mobile, License Number, License Expiry (YYYY-MM-DD)."
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
