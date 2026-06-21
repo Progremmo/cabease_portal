@@ -57,8 +57,8 @@ export default function UploadsPage() {
       fileName = "Candidate_Upload_Template.xlsx";
     } else {
       ws = XLSX.utils.aoa_to_sheet([
-        ["Name", "Email", "Mobile", "License Number", "License Expiry"],
-        ["Jane Smith", "jane@example.com", "0987654321", "DL-1234567", "2030-12-31"]
+        ["Name", "Email", "Mobile", "License Number", "License Expiry", "Aadhaar Number", "PAN Number"],
+        ["Jane Smith", "jane@example.com", "0987654321", "DL-1234567", "2030-12-31", "123456789012", "ABCDE1234F"]
       ]);
       fileName = "Driver_Upload_Template.xlsx";
     }
@@ -109,7 +109,7 @@ export default function UploadsPage() {
             <CardDescription>
               {uploadType === "CANDIDATE" 
                 ? "Columns required: Name, Email, Mobile, Pickup Address, Pickup Lat, Pickup Lng, Drop Address, Drop Lat, Drop Lng, Shift Time."
-                : "Columns required: Name, Email, Mobile, License Number, License Expiry (YYYY-MM-DD)."
+                : "Columns required: Name, Email, Mobile, License Number, License Expiry (YYYY-MM-DD), Aadhaar Number, PAN Number."
               }
             </CardDescription>
           </CardHeader>

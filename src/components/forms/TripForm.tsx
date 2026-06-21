@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { tripService } from "@/services/trip.service";
+import { Trip, tripService } from "@/services/trip.service";
 import { candidateService } from "@/services/candidate.service";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -35,12 +35,14 @@ const formSchema = z.object({
 type TripFormValues = z.infer<typeof formSchema>;
 
 interface TripFormProps {
+  initialData?: Trip;
   onSuccess?: () => void;
 }
 
-export function TripForm({ onSuccess }: TripFormProps) {
+export function TripForm({ initialData, onSuccess }: TripFormProps) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const isEditMode = !!initialData;
 
   const { data: candidatesData } = useQuery({
     queryKey: ["candidates", user?.companyId],
@@ -53,21 +55,29 @@ export function TripForm({ onSuccess }: TripFormProps) {
   const form = useForm<TripFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      candidateId: "",
-      scheduledPickupAt: "",
+      candidateId: initialData?.candidate?.id || "",
+      scheduledPickupAt: initialData?.scheduledPickupAt ? new Date(initialData.scheduledPickupAt).toISOString().slice(0, 16) : "",
     },
   });
 
   const mutation = useMutation({
-    mutationFn: (data: TripFormValues) => 
-      tripService.create(data.candidateId, user?.companyId as string, data.scheduledPickupAt || undefined),
+    mutationFn: (data: TripFormValues) => {
+      let isoDate = undefined;
+      if (data.scheduledPickupAt) {
+        isoDate = new Date(data.scheduledPickupAt).toISOString();
+      }
+      if (isEditMode) {
+        return tripService.update(initialData.id, data.candidateId, isoDate);
+      }
+      return tripService.create(data.candidateId, user?.companyId as string, isoDate);
+    },
     onSuccess: () => {
-      toast.success("Trip created successfully");
+      toast.success(isEditMode ? "Trip updated successfully" : "Trip created successfully");
       queryClient.invalidateQueries({ queryKey: ["trips"] });
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to create trip");
+      toast.error(error?.response?.data?.message || (isEditMode ? "Failed to update trip" : "Failed to create trip"));
     },
   });
 
@@ -117,7 +127,7 @@ export function TripForm({ onSuccess }: TripFormProps) {
         />
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Creating..." : "Create Trip"}
+            {mutation.isPending ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Trip" : "Create Trip")}
           </Button>
         </div>
       </form>

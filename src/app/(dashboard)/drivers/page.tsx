@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ColDef } from "ag-grid-community";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Power, PowerOff } from "lucide-react";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/tables/DataTable";
 import { DriverForm } from "@/components/forms/DriverForm";
@@ -17,7 +18,26 @@ export default function DriversPage() {
   const { user } = useAuthStore();
   const companyId = user?.companyId;
 
+  const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+
+  const isFormModalOpen = isAddModalOpen || !!editingDriver;
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setEditingDriver(null);
+  };
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      driverService.update(id, { active }),
+    onSuccess: () => {
+      toast.success("Driver status updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["drivers"] });
+    },
+    onError: () => toast.error("Failed to update driver status"),
+  });
 
   // Fetch Drivers
   const { data: drivers = [], isLoading } = useQuery({
@@ -84,6 +104,43 @@ export default function DriversPage() {
           return <span>{params.value ? `⭐ ${params.value}` : "N/A"}</span>;
         },
       },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 150,
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: any) => {
+          const driver = params.data;
+          if (!driver) return null;
+          const isActive = driver.active;
+          
+          return (
+            <div className="flex items-center gap-2 mt-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setEditingDriver(driver)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={isActive ? "text-destructive h-8 w-8" : "text-green-600 h-8 w-8"}
+                onClick={() => updateStatusMutation.mutate({ 
+                  id: driver.id, 
+                  active: !isActive 
+                })}
+                title={isActive ? "Disable Driver" : "Enable Driver"}
+              >
+                {isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+              </Button>
+            </div>
+          );
+        },
+      },
     ],
     []
   );
@@ -113,12 +170,15 @@ export default function DriversPage() {
       </div>
 
       <FormModal
-        isOpen={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
-        title="Add New Driver"
-        description="Create a new driver profile and assign a vehicle."
+        isOpen={isFormModalOpen}
+        onOpenChange={(open) => !open && handleCloseModal()}
+        title={editingDriver ? "Edit Driver" : "Add New Driver"}
+        description={editingDriver ? "Update driver details." : "Create a new driver profile and assign a vehicle."}
       >
-        <DriverForm onSuccess={() => setIsAddModalOpen(false)} />
+        <DriverForm 
+          initialData={editingDriver} 
+          onSuccess={handleCloseModal} 
+        />
       </FormModal>
     </div>
   );

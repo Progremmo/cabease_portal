@@ -58,6 +58,11 @@ export const driverService = {
     return response.data.data;
   },
 
+  update: async (id: string, data: any): Promise<Driver> => {
+    const response = await apiClient.put(`/drivers/${id}`, data);
+    return response.data.data;
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/drivers/${id}`);
   },

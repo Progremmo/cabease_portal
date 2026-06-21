@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColDef } from "ag-grid-community";
 import { Plus } from "lucide-react";
 
 import { DataTable } from "@/components/tables/DataTable";
 import { FormModal } from "@/components/shared/FormModal";
 import { TripForm } from "@/components/forms/TripForm";
+import { AssignDriverForm } from "@/components/forms/AssignDriverForm";
 import { LiveMap } from "@/components/map/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,10 @@ export default function TripsPage() {
   const companyId = user?.companyId;
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["trips", companyId],
@@ -50,6 +55,49 @@ export default function TripsPage() {
       { field: "scheduledPickupAt", headerName: "Scheduled", valueFormatter: (p) => p.value ? new Date(p.value).toLocaleString() : "Now" },
       { field: "candidate.pickupAddress", headerName: "Pickup", flex: 1 },
       { field: "candidate.dropAddress", headerName: "Drop", flex: 1 },
+      {
+        colId: "actions",
+        headerName: "Actions",
+        width: 250,
+        cellRenderer: (params: any) => {
+          const trip = params.data as Trip;
+
+          const handleEdit = () => {
+            setSelectedTrip(trip);
+            setIsEditModalOpen(true);
+          };
+
+          const handleAssign = () => {
+            setSelectedTrip(trip);
+            setIsAssignModalOpen(true);
+          };
+
+          const handleCancel = async () => {
+            if (confirm(`Are you sure you want to cancel Trip ${trip.tripNumber}?`)) {
+              try {
+                await tripService.cancelTrip(trip.id, "Cancelled from dashboard");
+                queryClient.invalidateQueries({ queryKey: ["trips"] });
+              } catch (e: any) {
+                alert(e?.response?.data?.message || "Failed to cancel trip");
+              }
+            }
+          };
+
+          return (
+            <div className="flex space-x-2 mt-1">
+              {trip.status === "CREATED" && (
+                <Button variant="outline" size="sm" onClick={handleEdit}>Edit</Button>
+              )}
+              {(trip.status === "CREATED" || trip.status === "ASSIGNED") && (
+                <Button variant="default" size="sm" onClick={handleAssign}>Assign</Button>
+              )}
+              {!["COMPLETED", "CANCELLED", "DROPPED"].includes(trip.status) && (
+                <Button variant="destructive" size="sm" onClick={handleCancel}>Cancel</Button>
+              )}
+            </div>
+          );
+        },
+      },
     ],
     []
   );
@@ -79,14 +127,14 @@ export default function TripsPage() {
           />
         </div>
         <div className="h-[600px] lg:col-span-1">
-          <LiveMap 
-            height={635} 
+          <LiveMap
+            height={635}
             markers={trips.map((t: Trip) => ({
               id: t.id,
               lat: t.candidate.pickupLatitude,
               lng: t.candidate.pickupLongitude,
               title: `Trip ${t.tripNumber} - ${t.candidate.name}`
-            }))} 
+            }))}
           />
         </div>
       </div>
@@ -98,6 +146,24 @@ export default function TripsPage() {
         description="Initiate a trip request for a candidate."
       >
         <TripForm onSuccess={() => setIsAddModalOpen(false)} />
+      </FormModal>
+
+      <FormModal
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        title="Edit Trip"
+        description={`Modify details for Trip ${selectedTrip?.tripNumber}`}
+      >
+        {selectedTrip && <TripForm initialData={selectedTrip} onSuccess={() => setIsEditModalOpen(false)} />}
+      </FormModal>
+
+      <FormModal
+        isOpen={isAssignModalOpen}
+        onOpenChange={setIsAssignModalOpen}
+        title="Assign Driver"
+        description={`Assign a driver to Trip ${selectedTrip?.tripNumber}`}
+      >
+        {selectedTrip && <AssignDriverForm trip={selectedTrip} onSuccess={() => setIsAssignModalOpen(false)} />}
       </FormModal>
     </div>
   );

@@ -53,6 +53,15 @@ export const tripService = {
     return response.data.data;
   },
 
+  update: async (tripId: string, candidateId?: string, scheduledPickupAt?: string): Promise<Trip> => {
+    const params = new URLSearchParams();
+    if (candidateId) params.append("candidateId", candidateId);
+    if (scheduledPickupAt) params.append("scheduledPickupAt", scheduledPickupAt);
+    
+    const response = await apiClient.put(`/trips/${tripId}?${params.toString()}`);
+    return response.data.data;
+  },
+
   assignDriver: async (tripId: string, companyId: string, driverId?: string, assignmentType: "AUTO" | "MANUAL" = "AUTO"): Promise<Trip> => {
     const params = new URLSearchParams({ companyId, assignmentType });
     if (driverId) {

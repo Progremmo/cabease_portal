@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ColDef } from "ag-grid-community";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Power, PowerOff } from "lucide-react";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/tables/DataTable";
 import { FormModal } from "@/components/shared/FormModal";
@@ -17,7 +18,26 @@ export default function CandidatesPage() {
   const { user } = useAuthStore();
   const companyId = user?.companyId;
 
+  const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+
+  const isFormModalOpen = isAddModalOpen || !!editingCandidate;
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setEditingCandidate(null);
+  };
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      candidateService.update(id, { status }),
+    onSuccess: () => {
+      toast.success("Status updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+    onError: () => toast.error("Failed to update status"),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["candidates", companyId],
@@ -47,6 +67,42 @@ export default function CandidatesPage() {
       { field: "shiftTime", headerName: "Shift Time" },
       { field: "pickupAddress", headerName: "Pickup", flex: 1 },
       { field: "dropAddress", headerName: "Drop", flex: 1 },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 150,
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: any) => {
+          const candidate = params.data;
+          if (!candidate) return null;
+          const isActive = candidate.status !== "INACTIVE";
+          
+          return (
+            <div className="flex items-center gap-2 mt-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setEditingCandidate(candidate)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={isActive ? "text-destructive h-8 w-8" : "text-green-600 h-8 w-8"}
+                onClick={() => updateStatusMutation.mutate({ 
+                  id: candidate.id, 
+                  status: isActive ? "INACTIVE" : "ACTIVE" 
+                })}
+              >
+                {isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+              </Button>
+            </div>
+          );
+        },
+      },
     ],
     []
   );
@@ -76,12 +132,15 @@ export default function CandidatesPage() {
       </div>
 
       <FormModal
-        isOpen={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
-        title="Add New Candidate"
-        description="Register a new employee for the cab service."
+        isOpen={isFormModalOpen}
+        onOpenChange={(open) => !open && handleCloseModal()}
+        title={editingCandidate ? "Edit Candidate" : "Add New Candidate"}
+        description={editingCandidate ? "Update candidate details." : "Register a new employee for the cab service."}
       >
-        <CandidateForm onSuccess={() => setIsAddModalOpen(false)} />
+        <CandidateForm 
+          initialData={editingCandidate} 
+          onSuccess={handleCloseModal} 
+        />
       </FormModal>
     </div>
   );

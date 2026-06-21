@@ -30,43 +30,71 @@ const formSchema = z.object({
   dropLatitude: z.coerce.number().min(-90).max(90),
   dropLongitude: z.coerce.number().min(-180).max(180),
   shiftTime: z.string().optional(),
+  aadhaarNumber: z.string().optional(),
+  panNumber: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  bloodGroup: z.string().optional(),
+  gender: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postalCode: z.string().optional(),
 });
 
 type CandidateFormValues = z.infer<typeof formSchema>;
 
 interface CandidateFormProps {
+  initialData?: any;
   onSuccess?: () => void;
 }
 
-export function CandidateForm({ onSuccess }: CandidateFormProps) {
+export function CandidateForm({ initialData, onSuccess }: CandidateFormProps) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
   const form = useForm<CandidateFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      mobile: "",
-      pickupAddress: "",
-      pickupLatitude: 0,
-      pickupLongitude: 0,
-      dropAddress: "",
-      dropLatitude: 0,
-      dropLongitude: 0,
-      shiftTime: "09:00",
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      mobile: initialData?.mobile || "",
+      pickupAddress: initialData?.pickupAddress || "",
+      pickupLatitude: initialData?.pickupLatitude || 0,
+      pickupLongitude: initialData?.pickupLongitude || 0,
+      dropAddress: initialData?.dropAddress || "",
+      dropLatitude: initialData?.dropLatitude || 0,
+      dropLongitude: initialData?.dropLongitude || 0,
+      shiftTime: initialData?.shiftTime ? initialData.shiftTime.split('T')[1]?.substring(0, 5) || "09:00" : "09:00",
+      aadhaarNumber: initialData?.aadhaarNumber || "",
+      panNumber: initialData?.panNumber || "",
+      dateOfBirth: initialData?.dateOfBirth || "",
+      bloodGroup: initialData?.bloodGroup || "",
+      gender: initialData?.gender || "",
+      addressLine1: initialData?.addressLine1 || "",
+      addressLine2: initialData?.addressLine2 || "",
+      city: initialData?.city || "",
+      state: initialData?.state || "",
+      country: initialData?.country || "",
+      postalCode: initialData?.postalCode || "",
     },
   });
 
+  const isEditing = !!initialData;
+
   const mutation = useMutation({
-    mutationFn: (data: CreateCandidateRequest) => candidateService.create(data),
+    mutationFn: (data: any) =>
+      isEditing
+        ? candidateService.update(initialData.id, data)
+        : candidateService.create(data as CreateCandidateRequest),
     onSuccess: () => {
-      toast.success("Candidate created successfully");
+      toast.success(isEditing ? "Candidate updated successfully" : "Candidate created successfully");
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to create candidate");
+      toast.error(error?.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} candidate`);
     },
   });
 
@@ -130,6 +158,86 @@ export function CandidateForm({ onSuccess }: CandidateFormProps) {
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="aadhaarNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Aadhaar Number</FormLabel>
+                <FormControl><Input placeholder="XXXX-XXXX-XXXX" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="panNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>PAN Number</FormLabel>
+                <FormControl><Input placeholder="ABCDE1234F" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="dateOfBirth"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date of Birth</FormLabel>
+                <FormControl><Input type="date" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="bloodGroup"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Blood Group</FormLabel>
+                <FormControl><Input placeholder="O+" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <FormControl><Input placeholder="Male/Female" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="space-y-2 border p-3 rounded-md bg-zinc-50 dark:bg-zinc-900/50">
+          <h4 className="text-sm font-medium">Residential Address</h4>
+          <FormField
+            control={form.control}
+            name="addressLine1"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl><Input placeholder="Address Line 1" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl></FormItem>)} />
+            <FormField control={form.control} name="state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl></FormItem>)} />
+            <FormField control={form.control} name="postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl></FormItem>)} />
+          </div>
+        </div>
+
         <div className="space-y-2 border p-3 rounded-md bg-zinc-50 dark:bg-zinc-900/50">
           <h4 className="text-sm font-medium">Pickup Details</h4>
           <FormField
@@ -168,7 +276,7 @@ export function CandidateForm({ onSuccess }: CandidateFormProps) {
 
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Creating..." : "Create Candidate"}
+            {mutation.isPending ? "Saving..." : isEditing ? "Update Candidate" : "Create Candidate"}
           </Button>
         </div>
       </form>
