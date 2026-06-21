@@ -24,43 +24,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const emailSchema = z.object({
+const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-});
-
-const resetSchema = z.object({
-  otp: z.string().min(6, { message: "OTP must be 6 characters." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+  otp: z.string().optional(),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
 });
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
-  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const emailForm = useForm<z.infer<typeof emailSchema>>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: { email: "" },
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { email: "", otp: "", password: "", confirmPassword: "" },
   });
 
-  const resetForm = useForm<z.infer<typeof resetSchema>>({
-    resolver: zodResolver(resetSchema),
-    defaultValues: { otp: "", password: "", confirmPassword: "" },
-  });
+  async function onEmailSubmit() {
+    const email = form.getValues("email");
+    const emailResult = z.string().email().safeParse(email);
+    if (!emailResult.success) {
+      form.setError("email", { type: "manual", message: "Please enter a valid email address." });
+      return;
+    }
 
-  async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     try {
       setIsLoading(true);
       await authService.sendOtp({
-        identifier: values.email,
+        identifier: email,
         otpType: "PASSWORD_RESET",
       });
-      setEmail(values.email);
       setStep(2);
       toast.success("OTP sent to your email");
     } catch (error: any) {
@@ -70,11 +64,24 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  async function onResetSubmit(values: z.infer<typeof resetSchema>) {
+  async function onResetSubmit(values: z.infer<typeof formSchema>) {
+    if (!values.otp || values.otp.length < 6) {
+      form.setError("otp", { type: "manual", message: "OTP must be at least 6 characters." });
+      return;
+    }
+    if (!values.password || values.password.length < 6) {
+      form.setError("password", { type: "manual", message: "Password must be at least 6 characters." });
+      return;
+    }
+    if (values.password !== values.confirmPassword) {
+      form.setError("confirmPassword", { type: "manual", message: "Passwords do not match." });
+      return;
+    }
+
     try {
       setIsLoading(true);
       await authService.resetPassword({
-        identifier: email,
+        identifier: values.email,
         otp: values.otp,
         newPassword: values.password,
       });
@@ -133,83 +140,83 @@ export default function ForgotPasswordPage() {
             <CardHeader className="space-y-2 pb-8">
               <CardTitle className="text-2xl">Reset Password</CardTitle>
               <CardDescription className="text-base">
-                {step === 1 ? "Enter your email to receive a verification code." : `Enter the verification code sent to ${email}.`}
+                {step === 1 ? "Enter your email to receive a verification code." : `Enter the verification code sent to ${form.getValues("email")}.`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {step === 1 ? (
-                <Form {...emailForm}>
-                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-5">
-                    <FormField
-                      control={emailForm.control}
-                      name="email"
-                      render={({ field }) => (
-                         <FormItem>
-                          <FormLabel className="text-foreground/80">Corporate Email</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 bg-background/50 border-border" placeholder="admin@cabease.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" size="lg" className="w-full h-12 text-base font-semibold mt-4 shadow-lg shadow-primary/25" disabled={isLoading}>
-                      {isLoading ? (
-                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending...</>
-                      ) : "Send Verification Code"}
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <Form {...resetForm}>
-                  <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-5">
-                    <FormField
-                      control={resetForm.control}
-                      name="otp"
-                      render={({ field }) => (
-                         <FormItem>
-                          <FormLabel className="text-foreground/80">Verification Code (OTP)</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 bg-background/50 border-border text-center tracking-[0.5em] font-mono text-lg" placeholder="••••••" maxLength={6} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={resetForm.control}
-                      name="password"
-                      render={({ field }) => (
-                         <FormItem>
-                          <FormLabel className="text-foreground/80">New Password</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 bg-background/50 border-border" type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={resetForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                         <FormItem>
-                          <FormLabel className="text-foreground/80">Confirm New Password</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 bg-background/50 border-border" type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" size="lg" className="w-full h-12 text-base font-semibold mt-4 shadow-lg shadow-primary/25" disabled={isLoading}>
-                      {isLoading ? (
-                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Resetting...</>
-                      ) : "Reset Password"}
-                    </Button>
-                  </form>
-                </Form>
-              )}
+              <Form {...form}>
+                <form onSubmit={step === 1 ? form.handleSubmit(onEmailSubmit) : form.handleSubmit(onResetSubmit)} className="space-y-5">
+                  {step === 1 ? (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground/80">Corporate Email</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 bg-background/50 border-border" placeholder="admin@cabease.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" size="lg" className="w-full h-12 text-base font-semibold mt-4 shadow-lg shadow-primary/25" disabled={isLoading}>
+                        {isLoading ? (
+                          <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending...</>
+                        ) : "Send Verification Code"}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="otp"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground/80">Verification Code (OTP)</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 bg-background/50 border-border text-center font-mono text-lg font-bold tracking-widest" type="text" placeholder="••••••" maxLength={8} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground/80">New Password</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 bg-background/50 border-border" type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground/80">Confirm New Password</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 bg-background/50 border-border" type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" size="lg" className="w-full h-12 text-base font-semibold mt-4 shadow-lg shadow-primary/25" disabled={isLoading}>
+                        {isLoading ? (
+                          <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Resetting...</>
+                        ) : "Reset Password"}
+                      </Button>
+                    </>
+                  )}
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </div>
