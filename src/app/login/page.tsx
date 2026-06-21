@@ -52,6 +52,13 @@ export default function LoginPage() {
         password: values.password,
       });
 
+      // Distinguish between Admins and Field Workers (Drivers/Candidates)
+      if (res.user.role === "DRIVER" || res.user.role === "CANDIDATE") {
+        setIsLoading(false);
+        toast.error("This portal is restricted to Enterprise Administrators. Please use the CabEase Mobile App to log in.");
+        return;
+      }
+
       setAuth(res.user, res.accessToken, res.refreshToken);
       toast.success("Login successful");
       router.push("/dashboard");
