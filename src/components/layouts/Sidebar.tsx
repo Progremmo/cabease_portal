@@ -31,7 +31,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-zinc-50 dark:bg-zinc-950/50">
+    <div className="flex h-full w-64 flex-col border-r border-border bg-surface shadow-2xl">
       <div className="flex h-16 items-center border-b px-6">
         <Car className="h-6 w-6 text-primary mr-2" />
         <span className="text-lg font-bold">{siteConfig.name}</span>
@@ -46,8 +46,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  ? "bg-primary/20 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
               )}
             >
               <item.icon className="h-4 w-4" />
