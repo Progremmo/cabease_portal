@@ -1,68 +1,84 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { siteConfig } from "@/config/site";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  // In a real app, you would fetch the post by slug to generate title/description
+async function getBlogBySlug(slug: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+    const res = await fetch(`${baseUrl}/public/blogs/${slug}`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch (e) {
+    console.error("Failed to fetch blog:", e);
+    return null;
+  }
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const blog = await getBlogBySlug(params.slug);
+  if (!blog) return { title: `Not Found | ${siteConfig.name}` };
   return {
-    title: `${params.slug.replace(/-/g, ' ')} | CabEase Blog`,
-    description: "Read more on the CabEase blog.",
+    title: `${blog.title} | ${siteConfig.name}`,
+    description: blog.excerpt || `${blog.title} - Read more on the ${siteConfig.name} blog.`,
   };
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  // Mock data fetching
-  const post = {
-    title: params.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-    date: "Jun 12, 2024",
-    category: "Fleet Operations",
-    author: "Jane Doe",
-    content: "This is a placeholder for the blog content. In a production environment, this content would be fetched from a CMS like Sanity, Contentful, or a database, and rendered using a markdown parser or rich text renderer.",
-  };
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const blog = await getBlogBySlug(params.slug);
+
+  if (!blog) {
+    notFound();
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <article className="py-20 bg-background">
-        <div className="container mx-auto px-4 sm:px-8 max-w-3xl">
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="bg-muted py-16 md:py-24 border-b relative overflow-hidden">
+        {blog.coverImageUrl ? (
+          <div className="absolute inset-0 z-0">
+            <img src={blog.coverImageUrl} alt={blog.title} className="object-cover w-full h-full opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-0 bg-primary/5" />
+        )}
+
+        <div className="container mx-auto px-4 sm:px-8 max-w-4xl relative z-10">
           <Link href="/blog">
-            <Button variant="ghost" className="mb-8 -ml-4">
+            <Button variant="ghost" className="mb-8 -ml-4 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Blog
             </Button>
           </Link>
-          
-          <div className="mb-8 space-y-4">
-            <Badge>{post.category}</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{post.title}</h1>
-            <div className="flex items-center text-muted-foreground gap-4 text-sm font-medium">
-              <span>{post.author}</span>
-              <span>•</span>
-              <span>{post.date}</span>
-            </div>
+          <div className="flex items-center gap-4 mb-6">
+            <Badge variant="secondary">{new Date(blog.publishedAt || blog.createdAt).toLocaleDateString()}</Badge>
+            <span className="text-sm font-medium text-muted-foreground">By {blog.authorName}</span>
           </div>
-          
-          <div className="aspect-[21/9] relative rounded-2xl border overflow-hidden mb-12 bg-muted">
-            <Image src="/images/blog_hero.png" alt="Blog Hero" fill className="object-cover" sizes="100vw" priority />
-          </div>
-          
-          <div className="prose prose-lg dark:prose-invert max-w-none">
-            <p className="text-xl text-muted-foreground leading-relaxed mb-6">
-              {post.content}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
+            {blog.title}
+          </h1>
+          {blog.excerpt && (
+            <p className="text-xl text-muted-foreground">
+              {blog.excerpt}
             </p>
-            <p className="text-lg leading-relaxed">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-            </p>
-            <h2 className="text-2xl font-bold mt-10 mb-4">Key Takeaways</h2>
-            <ul className="list-disc pl-6 space-y-2 mb-8">
-              <li>Implement AI routing algorithms</li>
-              <li>Monitor driver behavior and idle times</li>
-              <li>Perform regular preventative maintenance</li>
-            </ul>
-          </div>
+          )}
         </div>
-      </article>
+      </div>
+
+      {/* Content Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-8 max-w-3xl">
+          <article className="prose prose-lg dark:prose-invert max-w-none">
+            {/* If content is raw text/markdown, a markdown parser like react-markdown should be used. 
+                For now, we'll dangerouslySetInnerHTML if it's HTML, or just render it. */}
+            <div dangerouslySetInnerHTML={{ __html: blog.content.replace(/\n/g, '<br/>') }} />
+          </article>
+        </div>
+      </section>
     </div>
   );
 }

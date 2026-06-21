@@ -16,6 +16,7 @@ import {
   BarChart,
   Bell,
   Settings,
+  FileText,
 } from "lucide-react";
 
 const navigation = [
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Trips", href: "/trips", icon: MapPin },
   { name: "Excel Uploads", href: "/uploads", icon: Upload },
   { name: "Reports", href: "/reports", icon: BarChart },
+  { name: "Blogs", href: "/blogs", icon: FileText },
 ];
 
 export function Sidebar() {

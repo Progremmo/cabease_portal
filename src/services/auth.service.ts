@@ -41,4 +41,12 @@ export const authService = {
     // Optionally call backend logout if it exists
     // await apiClient.post('/auth/logout');
   },
+
+  sendOtp: async (data: { identifier: string; otpType: string }): Promise<void> => {
+    await apiClient.post('/auth/otp/send', data);
+  },
+
+  resetPassword: async (data: { identifier: string; otp: string; newPassword: string }): Promise<void> => {
+    await apiClient.post('/auth/password-reset', data);
+  },
 };

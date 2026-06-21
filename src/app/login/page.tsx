@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { CarFront, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { siteConfig } from "@/config/site";
 
 import { Button } from "@/components/ui/button";
@@ -136,7 +137,7 @@ export default function LoginPage() {
                       <FormItem>
                         <div className="flex items-center justify-between">
                           <FormLabel className="text-foreground/80">Password</FormLabel>
-                          <a href="#" className="text-sm text-primary hover:underline font-medium">Forgot password?</a>
+                          <Link href="/forgot-password" className="text-sm text-primary hover:underline font-medium">Forgot password?</Link>
                         </div>
                         <FormControl>
                           <Input className="h-12 bg-background/50 border-border" type="password" placeholder="••••••••" {...field} />
