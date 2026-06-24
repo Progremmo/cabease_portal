@@ -105,9 +105,9 @@ export default function DriversPage() {
         },
       },
       {
-        field: "actions",
+        colId: "actions",
         headerName: "Actions",
-        width: 150,
+        width: 120,
         sortable: false,
         filter: false,
         cellRenderer: (params: any) => {

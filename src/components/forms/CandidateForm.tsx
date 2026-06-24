@@ -55,7 +55,7 @@ export function CandidateForm({ initialData, onSuccess }: CandidateFormProps) {
   const queryClient = useQueryClient();
 
   const form = useForm<CandidateFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: initialData?.name || "",
       email: initialData?.email || "",

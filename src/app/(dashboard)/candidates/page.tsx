@@ -68,7 +68,7 @@ export default function CandidatesPage() {
       { field: "pickupAddress", headerName: "Pickup", flex: 1 },
       { field: "dropAddress", headerName: "Drop", flex: 1 },
       {
-        field: "actions",
+        colId: "actions",
         headerName: "Actions",
         width: 150,
         sortable: false,
