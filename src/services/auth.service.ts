@@ -15,17 +15,38 @@ export interface LoginResponse {
     email: string;
     role: string;
     name: string;
+    companyId?: string;
   };
 }
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post('/auth/login', data);
-    return response.data.data;
+    const d = response.data.data;
+    
+    return {
+      accessToken: d.accessToken,
+      refreshToken: d.refreshToken,
+      user: {
+        id: d.userId,
+        email: d.email,
+        name: d.name,
+        role: d.role,
+        companyId: d.companyId
+      }
+    };
   },
 
   logout: async (): Promise<void> => {
     // Optionally call backend logout if it exists
     // await apiClient.post('/auth/logout');
+  },
+
+  sendOtp: async (data: { identifier: string; otpType: string }): Promise<void> => {
+    await apiClient.post('/auth/otp/send', data);
+  },
+
+  resetPassword: async (data: { identifier: string; otp: string; newPassword: string }): Promise<void> => {
+    await apiClient.post('/auth/password-reset', data);
   },
 };

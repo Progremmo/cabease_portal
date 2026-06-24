@@ -11,8 +11,11 @@ export default function DashboardLayout({
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
-          {children}
+        <main className="flex-1 overflow-y-auto p-6 bg-background relative">
+          <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-background to-background pointer-events-none" />
+          <div className="relative z-10">
+            {children}
+          </div>
         </main>
       </div>
     </div>

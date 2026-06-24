@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicRoutes = ['/login', '/forgot-password', '/reset-password'];
+const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/', '/about', '/features', '/solutions', '/pricing', '/contact', '/careers', '/privacy-policy', '/terms-and-conditions', '/request-demo', '/book-demo', '/sitemap.xml', '/robots.txt'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   if (
     publicRoutes.includes(pathname) ||
+    pathname.startsWith('/blog') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.includes('.')
